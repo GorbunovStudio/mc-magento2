@@ -20,7 +20,9 @@ class Products extends Column
         ProductType::TYPE_SIMPLE,
         ProductType::TYPE_VIRTUAL,
         ProductTypeConfigurable::TYPE_CODE,
-        ProductTypeDownloadable::TYPE_DOWNLOADABLE
+        ProductTypeDownloadable::TYPE_DOWNLOADABLE,
+        ProductType::TYPE_BUNDLE,
+        'amgiftcard'
     ];
 
     /**
@@ -174,7 +176,7 @@ class Products extends Column
                         $params
                     );
                     $text = __('Unsupported');
-                    $alt = "Mailchimp does not support bundled or grouped products.";
+                    $alt = "Mailchimp does not support grouped products.";
                 }
                 $item['mailchimp_sync'] =
                     "<div style='width: 100%;margin: 0 auto;text-align: center'><div><img src='".$url."' style='border: none; width: 5rem; text-align: center; max-width: 100%' title='$alt' /></div><div>$text</div></div>";

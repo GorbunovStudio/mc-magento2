@@ -13,6 +13,7 @@ mc-magento2 Magento Component
 namespace Ebizmarts\MailChimp\Model\Api;
 
 use Ebizmarts\MailChimp\Helper\Sync as SyncHelper;
+use Budsies\Catalog\Service\BundleProductsPricesProvider;
 
 class Product
 {
@@ -109,9 +110,9 @@ class Product
         \Magento\ConfigurableProduct\Model\Product\Type\Configurable $configurable,
         \Magento\Catalog\Model\ResourceModel\Category\CollectionFactory $categoryCollection,
         \Magento\Catalog\Helper\Data $taxHelper,
-        \Magento\Catalog\Model\Product\Option $option
+        \Magento\Catalog\Model\Product\Option $option,
+        private BundleProductsPricesProvider $bundleProductsPricesProvider,
     ) {
-
         $this->_productRepository   = $productRepository;
         $this->_helper              = $helper;
         $this->syncHelper           = $syncHelper;
@@ -127,6 +128,7 @@ class Product
         $this->taxHelper            = $taxHelper;
         $this->_batchId             = \Ebizmarts\MailChimp\Helper\Data::IS_PRODUCT. '_' .
             $this->_helper->getGmtTimeStamp();
+
     }
     public function _sendProducts($magentoStoreId)
     {
@@ -142,7 +144,7 @@ class Product
         $this->_markSpecialPrices($magentoStoreId, $mailchimpStoreId);
         $batchArray = array_merge($batchArray,$this->processDeletedProducts($magentoStoreId, $mailchimpStoreId));
         $collection = $this->_getCollection();
-        $collection->addFieldToFilter("type_id", ["nin"=>[\Magento\Catalog\Model\Product\Type::TYPE_BUNDLE, "grouped"]]);
+        $collection->addFieldToFilter("type_id", ["nin" => ['grouped']]);
         $collection->addStoreFilter($magentoStoreId);
         $collection->getSelect()->reset(\Magento\Framework\DB\Select::COLUMNS)->columns(['entity_id']);
         $collection->getSelect()->joinLeft(
@@ -161,13 +163,17 @@ class Product
              */
             $product = $this->_productRepository->getById($item->getId(), false, $magentoStoreId);
             if ($item->getMailchimpSyncModified() && $item->getMailchimpSyncDelta() &&
-                $item->getMailchimpSyncDelta() > $this->_helper->getMCMinSyncDateFlag()) {
-                $batchArray = array_merge($this->_buildOldProductRequest(
+                $item->getMailchimpSyncDelta() > $this->_helper->getMCMinSyncDateFlag())
+            {
+                $productRequestData = $this->_buildOldProductRequest(
                     $product,
                     $this->_batchId,
                     $mailchimpStoreId,
                     $magentoStoreId
-                ), $batchArray);
+                );
+
+                $batchArray[] = $productRequestData;
+
                 $this->_updateProduct($mailchimpStoreId, $product->getId());
                 continue;
             } else {
@@ -307,6 +313,8 @@ class Product
         $variantProducts = [];
         switch ($product->getTypeId()) {
             case \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE:
+            case \Magento\Catalog\Model\Product\Type::TYPE_BUNDLE:
+            case 'amgiftcard':
                 $variantProducts[] = $product;
                 break;
             case \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE:
@@ -355,9 +363,12 @@ class Product
     ) {
         $operations = [];
         $variantProducts = [];
-        if ($product->getTypeId() == \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE ||
-            $product->getTypeId() == \Magento\Catalog\Model\Product\Type::TYPE_VIRTUAL ||
-            $product->getTypeId() == "downloadable") {
+        if ($product->getTypeId() == \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE
+            || $product->getTypeId() == \Magento\Catalog\Model\Product\Type::TYPE_VIRTUAL
+            || $product->getTypeId() == \Magento\Catalog\Model\Product\Type::TYPE_BUNDLE
+            || $product->getTypeId() === "downloadable"
+            || $product->getTypeId() ==='amgiftcard'
+        ) {
             $data = $this-> _buildProductData($product, $magentoStoreId);
             $variantProducts [] = $product;
             // $parentIds = $product->getTypeInstance()->getParentIdsByChild($product->getId());
@@ -689,6 +700,12 @@ class Product
     }
     protected function _getProductPrice(\Magento\Catalog\Model\Product $product)
     {
+        if ($product->getTypeId() === \Magento\Catalog\Model\Product\Type::TYPE_BUNDLE) {
+            $productPrices = $this->bundleProductsPricesProvider->getProductPrices((int)$product->getId(), $product->getStore());
+
+            return $productPrices['finalPrice'];
+        }
+
         if ($this->includingTaxes) {
             $price = $this->taxHelper->getTaxPrice($product, $product->getFinalPrice(), true);
         } else {
