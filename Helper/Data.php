@@ -15,6 +15,7 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Store\Model\Store;
 use Symfony\Component\Config\Definition\Exception\Exception;
+use Magento\Framework\Event\ManagerInterface;
 
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
@@ -245,7 +246,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         \Magento\Framework\App\DeploymentConfig $deploymentConfig,
         \Magento\Framework\Stdlib\DateTime\DateTime $date,
         \Magento\Directory\Model\CountryFactory $countryFactory,
-        \Magento\Framework\Locale\Resolver $resolver
+        \Magento\Framework\Locale\Resolver $resolver,
+        private ManagerInterface $eventManager,
     ) {
 
         $this->_storeManager  = $storeManager;
@@ -669,6 +671,16 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
                         }
                     }
                 }
+
+                $this->eventManager->dispatch(
+                    'mailchimp_merge_field_send_before', [
+                        'customer_id' => $customer->getId(),
+                        'subscriber_email' => $customer->getEmail(),
+                        'merge_field_tag' => $map['customer_field'],
+                        'merge_field_value' => &$value,
+                        'store_id' => $storeId
+                    ]
+                );
 
                 if (!empty($value)) {
                     $mergeVars[$map['mailchimp']] = $value;
