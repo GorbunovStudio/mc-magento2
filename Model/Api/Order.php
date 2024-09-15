@@ -73,7 +73,7 @@ class Order
      */
     protected $ruleRepository;
     /**
-     * @var \Magento\Framework\Url
+     * @var \Magento\Backend\Model\UrlInterface
      */
     protected $_urlHelper;
     /**
@@ -114,7 +114,7 @@ class Order
         \Ebizmarts\MailChimp\Model\MailChimpSyncEcommerce $chimpSyncEcommerce,
         \Magento\SalesRule\Model\Coupon $couponRepository,
         \Magento\SalesRule\Model\RuleRepository $ruleRepository,
-        \Magento\Framework\Url $urlHelper
+        \Magento\Backend\Model\UrlInterface $urlHelper,
     ) {
 
         $this->_helper          = $helper;
@@ -474,13 +474,14 @@ class Order
         ];
 
         $data['order_url'] = $this->_urlHelper->getUrl(
-            'sales/order/view/',
-            [
-                'order_id' => $order->getId(),
-                '_nosid' => true,
-                '_secure' => true
-            ]
-        );
+                'sales/order/view/',
+                [
+                    'order_id' => $order->getId(),
+                    '_nosid' => true,
+                    '_secure' => true,
+                    '_nosecret' => true
+                ]
+            );
         if ($order->getCustomerFirstname()) {
             $data["customer"]["first_name"] = $order->getCustomerFirstname();
         }
