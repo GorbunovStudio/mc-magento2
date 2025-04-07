@@ -67,6 +67,10 @@ class Ecommerce
      * @var \Magento\Framework\Filesystem\DirectoryList
      */
     private $_dir;
+    /**
+     * @var \Magento\Framework\Model\ResourceModel\Db\VersionControl\Snapshot
+     */
+    private $_snapshot;
 
     /**
      * Ecommerce constructor.
@@ -83,6 +87,7 @@ class Ecommerce
      * @param \Ebizmarts\MailChimp\Model\MailChimpSyncBatchesFactory $mailChimpSyncBatchesFactory
      * @param \Ebizmarts\MailChimp\Model\MailChimpSyncEcommerce $chimpSyncEcommerce
      * @param \Magento\Framework\Filesystem\DirectoryList $dir
+     * @param \Magento\Framework\Model\ResourceModel\Db\VersionControl\Snapshot $snapshot
      */
     public function __construct(
         \Magento\Store\Model\StoreManager $storeManager,
@@ -97,7 +102,9 @@ class Ecommerce
         \Ebizmarts\MailChimp\Model\Api\PromoRules $apiPromoRules,
         \Ebizmarts\MailChimp\Model\MailChimpSyncBatchesFactory $mailChimpSyncBatchesFactory,
         \Ebizmarts\MailChimp\Model\MailChimpSyncEcommerce $chimpSyncEcommerce,
-        \Magento\Framework\Filesystem\DirectoryList $dir
+        \Magento\Framework\Filesystem\DirectoryList $dir,
+        \Magento\Framework\Model\ResourceModel\Db\VersionControl\Snapshot $snapshot
+
     ) {
 
         $this->_storeManager    = $storeManager;
@@ -113,6 +120,7 @@ class Ecommerce
         $this->_apiPromoCodes   = $apiPromoCodes;
         $this->_apiPromoRules   = $apiPromoRules;
         $this->_dir             = $dir;
+        $this->_snapshot        = $snapshot;
     }
 
     public function execute()
@@ -140,6 +148,7 @@ class Ecommerce
                 if ($mailchimpStoreId != -1 && $mailchimpStoreId != '') {
                     $this->_apiResult->processResponses($storeId, true, $mailchimpStoreId);
                     $batchId = $this->_processStore($storeId, $mailchimpStoreId, $listId);
+                    $this->_snapshot->clear();
                     if ($batchId) {
                         $connection->update(
                             $tableName,
