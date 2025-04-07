@@ -71,14 +71,15 @@ class Subscriber
             ->addFieldToFilter('store_id', ['eq' => $storeId]);
         $collection->getSelect()->joinLeft(
             ['m4m' => $this->_helper->getTableName('mailchimp_sync_ecommerce')],
-            "m4m.related_id = main_table.subscriber_id",
+            "m4m.related_id = main_table.subscriber_id and m4m.type = '".
+            \Ebizmarts\MailChimp\Helper\Data::IS_SUBSCRIBER.
+            "' and m4m.mailchimp_store_id = '".$listId."'",
             ['m4m.*']
         );
         $collection->getSelect()->where("m4m.mailchimp_sync_delta IS null ".
             "OR (m4m.mailchimp_sync_delta > '".$this->_helper->getMCMinSyncDateFlag().
-            "' and m4m.mailchimp_sync_modified = 1) and m4m.type = '".
-            \Ebizmarts\MailChimp\Helper\Data::IS_SUBSCRIBER.
-            "' and m4m.mailchimp_store_id = '".$listId."'");
+            "' and m4m.mailchimp_sync_modified = 1)");
+        $collection->getSelect()->limit(self::BATCH_LIMIT);
         $subscriberArray = [];
         $date = $this->_helper->getDateMicrotime();
         $batchId = \Ebizmarts\MailChimp\Helper\Data::IS_SUBSCRIBER . '_' . $date;
