@@ -13,8 +13,6 @@
 
 namespace Ebizmarts\MailChimp\Cron;
 
-use Magento\Framework\Model\ResourceModel\Db\VersionControl\Snapshot;
-
 class Ecommerce
 {
     /**
