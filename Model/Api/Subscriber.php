@@ -22,10 +22,6 @@ class Subscriber
      */
     protected $_helper;
     /**
-     * @var SyncHelper
-     */
-    private $syncHelper;
-    /**
      * @var \Magento\Newsletter\Model\ResourceModel\Subscriber\CollectionFactory
      */
     protected $_subscriberCollection;
@@ -37,6 +33,10 @@ class Subscriber
      * @var \Magento\Newsletter\Model\SubscriberFactory
      */
     protected $_subscriberFactory;
+    /**
+     * @var SyncHelper
+     */
+    private $syncHelper;
     protected $_interest=null;
 
     /**
@@ -53,6 +53,7 @@ class Subscriber
         \Magento\Newsletter\Model\SubscriberFactory $subscriberFactory,
         \Magento\Framework\Message\ManagerInterface $message
     ) {
+
         $this->_helper                  = $helper;
         $this->syncHelper               = $syncHelper;
         $this->_subscriberCollection    = $subscriberCollection;
@@ -78,7 +79,6 @@ class Subscriber
             "' and m4m.mailchimp_sync_modified = 1) and m4m.type = '".
             \Ebizmarts\MailChimp\Helper\Data::IS_SUBSCRIBER.
             "' and m4m.mailchimp_store_id = '".$listId."'");
-        $collection->getSelect()->limit(self::BATCH_LIMIT);
         $subscriberArray = [];
         $date = $this->_helper->getDateMicrotime();
         $batchId = \Ebizmarts\MailChimp\Helper\Data::IS_SUBSCRIBER . '_' . $date;
